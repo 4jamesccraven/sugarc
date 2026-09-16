@@ -1,7 +1,8 @@
 import argparse
-from typing import cast
+import math
 from enum import Enum
 from itertools import repeat
+from typing import cast
 
 class BlockState(Enum):
     SOIL = 1
@@ -20,27 +21,45 @@ class BlockState(Enum):
             case BlockState.IGNORE:
                 return ' '
 
-def cli() -> int:
+def cli() -> argparse.Namespace:
     p = argparse.ArgumentParser('test')
     p.add_argument('w', type=int)
-    w = cast(int, p.parse_args().w)
-    return w
+    p.add_argument('-c', action='store_true')
+    return p.parse_args()
 
-def init_grid(width: int) -> list[list[BlockState]]:
+def init_grid(width: int, circle = False) -> list[list[BlockState]]:
     grid = []
     for _ in repeat(None, width):
         grid.append([BlockState.SOIL] * width)
+
+    if not circle:
+        return grid
+
+    centre: float = (width - 1) / 2
+    radius: float = width / 2
+
+    for y in range(width):
+        for x in range (width):
+            horizontal_delta = x - centre
+            vertical_delta = y - centre
+            if math.sqrt(horizontal_delta**2 + vertical_delta**2) > radius:
+                grid[y][x] = BlockState.IGNORE
+
     return grid
 
 def apply_pattern(congruency: int, grid: list[list[BlockState]]) -> None:
     for y in range(len(grid)):
         for x in range(len(grid[0])):
+            if grid[y][x] == BlockState.IGNORE:
+                continue
             if ((2*x + y) % 5) == congruency:
                 grid[y][x] = BlockState.WATER
 
     for y in range(len(grid)):
         for x in range(len(grid[0])):
             if grid[y][x] == BlockState.WATER:
+                continue
+            if grid[y][x] == BlockState.IGNORE:
                 continue
 
             surroundings: list[BlockState] = []
@@ -57,7 +76,10 @@ def apply_pattern(congruency: int, grid: list[list[BlockState]]) -> None:
                 grid[y][x] = BlockState.UNUSABLE
 
 def main() -> None:
-    grid = init_grid(cli())
+    args = cli()
+    width = cast(int, args.w)
+    circle = cast(bool, args.c)
+    grid = init_grid(width, circle)
 
     apply_pattern(0, grid)
 
