@@ -26,8 +26,9 @@ type BlockGrid = list[list[BlockState]]
 
 def cli() -> argparse.Namespace:
     p = argparse.ArgumentParser('test')
-    p.add_argument('w', type=int)
-    p.add_argument('-c', action='store_true')
+    p.add_argument('width', type=int)
+    p.add_argument('-c', '--circle', action='store_true')
+    p.add_argument('-a', '--show-all', action='store_true')
     return p.parse_args()
 
 def init_grid(width: int, circle = False) -> BlockGrid:
@@ -79,10 +80,12 @@ def apply_pattern(congruency: int, grid: BlockGrid) -> None:
                 grid[y][x] = BlockState.UNUSABLE
 
 def score_grid(grid: BlockGrid) -> int:
+    '''Scores a grid by counting unusable blocks. A lower score is more optimal.'''
     return sum(1 for row in grid for block in row if block == BlockState.UNUSABLE)
 
 def optimal_offsets(grid: BlockGrid) -> list[int]:
-    scores: dict[int, int] ={}
+    '''Finds all minimum-scored layouts.'''
+    scores: dict[int, int] = {}
     for i in range(0, 5):
         new_grid = copy.deepcopy(grid)
         apply_pattern(i, new_grid)
@@ -100,11 +103,14 @@ def display_grid(grid: BlockGrid) -> None:
 
 def main() -> None:
     args = cli()
-    width = cast(int, args.w)
-    circle = cast(bool, args.c)
+    width = cast(int, args.width)
+    circle = cast(bool, args.circle)
+    show_all = cast(bool, args.show_all)
     grid = init_grid(width, circle)
 
-    for offset in optimal_offsets(grid):
+    display_offsets = range(0, 5) if show_all else optimal_offsets(grid)
+
+    for offset in display_offsets:
         display = copy.deepcopy(grid)
         apply_pattern(offset, display)
         print(f'Grid with offset {offset}')
