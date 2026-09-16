@@ -1,4 +1,5 @@
 import argparse
+import copy
 import math
 from enum import Enum
 from itertools import repeat
@@ -21,13 +22,15 @@ class BlockState(Enum):
             case BlockState.IGNORE:
                 return ' '
 
+type BlockGrid = list[list[BlockState]]
+
 def cli() -> argparse.Namespace:
     p = argparse.ArgumentParser('test')
     p.add_argument('w', type=int)
     p.add_argument('-c', action='store_true')
     return p.parse_args()
 
-def init_grid(width: int, circle = False) -> list[list[BlockState]]:
+def init_grid(width: int, circle = False) -> BlockGrid:
     grid = []
     for _ in repeat(None, width):
         grid.append([BlockState.SOIL] * width)
@@ -47,7 +50,7 @@ def init_grid(width: int, circle = False) -> list[list[BlockState]]:
 
     return grid
 
-def apply_pattern(congruency: int, grid: list[list[BlockState]]) -> None:
+def apply_pattern(congruency: int, grid: BlockGrid) -> None:
     for y in range(len(grid)):
         for x in range(len(grid[0])):
             if grid[y][x] == BlockState.IGNORE:
@@ -75,19 +78,37 @@ def apply_pattern(congruency: int, grid: list[list[BlockState]]) -> None:
             if not any(block == BlockState.WATER for block in surroundings):
                 grid[y][x] = BlockState.UNUSABLE
 
+def score_grid(grid: BlockGrid) -> int:
+    return sum(1 for row in grid for block in row if block == BlockState.UNUSABLE)
+
+def optimal_offsets(grid: BlockGrid) -> list[int]:
+    scores: dict[int, int] ={}
+    for i in range(0, 5):
+        new_grid = copy.deepcopy(grid)
+        apply_pattern(i, new_grid)
+        scores[i] = score_grid(new_grid)
+
+    print(scores)
+    min_score = min(scores.values())
+    return [offset for offset, score in scores.items() if score == min_score]
+
+def display_grid(grid: BlockGrid) -> None:
+    for row in grid:
+        for block in row:
+            print(f'{block.display()}', end='')
+        print('\n', end='')
+
 def main() -> None:
     args = cli()
     width = cast(int, args.w)
     circle = cast(bool, args.c)
     grid = init_grid(width, circle)
 
-    apply_pattern(0, grid)
-
-    for row in grid:
-        for block in row:
-            print(f'{block.display()}', end='')
-        print('\n', end='')
-
+    for offset in optimal_offsets(grid):
+        display = copy.deepcopy(grid)
+        apply_pattern(offset, display)
+        print(f'Grid with offset {offset}')
+        display_grid(display)
 
 if __name__ == '__main__':
     main()
