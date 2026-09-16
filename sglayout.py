@@ -3,7 +3,7 @@ import copy
 import math
 from enum import Enum
 from itertools import repeat
-from typing import cast
+from typing import cast, Literal
 
 class BlockState(Enum):
     SOIL = 1
@@ -29,17 +29,27 @@ def cli() -> argparse.Namespace:
     p.add_argument('width', type=int)
     p.add_argument('-c', '--circle', action='store_true')
     p.add_argument('-a', '--show-all', action='store_true')
+    p.add_argument('--ignore-centre', type=int)
     return p.parse_args()
 
-def init_grid(width: int, circle = False) -> BlockGrid:
+def init_grid(width: int, circle = False, block_centre: int | None = None) -> BlockGrid:
     grid = []
     for _ in repeat(None, width):
         grid.append([BlockState.SOIL] * width)
 
+    centre: float = (width - 1) / 2
+
+    if block_centre is not None:
+        for y in range(width):
+            for x in range(width):
+                horizontal_delta = abs(x - centre)
+                vertical_delta = abs(y - centre)
+                if horizontal_delta < block_centre and vertical_delta < block_centre:
+                    grid[y][x] = BlockState.IGNORE
+
     if not circle:
         return grid
 
-    centre: float = (width - 1) / 2
     radius: float = width / 2
 
     for y in range(width):
@@ -79,9 +89,9 @@ def apply_pattern(congruency: int, grid: BlockGrid) -> None:
             if not any(block == BlockState.WATER for block in surroundings):
                 grid[y][x] = BlockState.UNUSABLE
 
-def score_grid(grid: BlockGrid) -> int:
+def score_grid(grid: BlockGrid, metric: BlockState = BlockState.UNUSABLE) -> int:
     '''Scores a grid by counting unusable blocks. A lower score is more optimal.'''
-    return sum(1 for row in grid for block in row if block == BlockState.UNUSABLE)
+    return sum(1 for row in grid for block in row if block == metric)
 
 def optimal_offsets(grid: BlockGrid) -> list[int]:
     '''Finds all minimum-scored layouts.'''
@@ -106,14 +116,17 @@ def main() -> None:
     width = cast(int, args.width)
     circle = cast(bool, args.circle)
     show_all = cast(bool, args.show_all)
-    grid = init_grid(width, circle)
+    ignore_centre = cast(int | None, args.ignore_centre)
+    grid = init_grid(width, circle, ignore_centre)
 
     display_offsets = range(0, 5) if show_all else optimal_offsets(grid)
 
     for offset in display_offsets:
         display = copy.deepcopy(grid)
         apply_pattern(offset, display)
-        print(f'Grid with offset {offset}')
+        soil = score_grid(display, metric=BlockState.SOIL)
+        water = score_grid(display, metric=BlockState.WATER)
+        print(f'Grid with offset {offset} — {soil} soil blocks, {water} water sources')
         display_grid(display)
 
 if __name__ == '__main__':
