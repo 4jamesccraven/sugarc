@@ -20,7 +20,12 @@
       devShells = eachDefaultSystem (pkgs: {
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            python314
+            ghc
+            cabal-install
+            ghcid
+            haskell-language-server
+            fourmolu
+            hlint
           ];
         };
       });
