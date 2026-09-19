@@ -1,5 +1,8 @@
 module SugarCane.Geometry where
 
+import Data.List ((!?))
+import Data.Maybe
+
 data Shape
   = Square {sideLength :: Int}
   | Rectangle {width :: Int, height :: Int}
@@ -33,3 +36,47 @@ boxDimensions shape = case shape of
   Rectangle {width = w, height = h} -> (w, h)
   Circle {diameter = d} -> (d, d)
   Ellipse {width = w, height = h} -> (w, h)
+
+------------------------------------------------------------
+-- Grid Operations
+------------------------------------------------------------
+
+-- Index Generation
+
+-- | Create a version of some grid with its indices exposed.
+-- | Indices are zero-indexed.
+indexGrid :: [[a]] -> [[(Int, Int, a)]]
+indexGrid xss =
+  zipWith
+    ( \r row ->
+        zipWith (\c val -> (c, r, val)) [0 ..] row
+    )
+    [0 ..]
+    xss
+
+-- | De-index a grid
+deindex :: [[(Int, Int, a)]] -> [[a]]
+deindex xss = [[val | (_, _, val) <- row] | row <- xss]
+
+-- Adjacency Calculations
+
+-- | Returns the neigbour at `offset`, if one exists.
+neighbour :: [[a]] -> (Int, Int) -> (Int, Int) -> Maybe a
+neighbour grid curr offset =
+  let (x_1, z_1) = curr
+      (x_2, z_2) = offset
+      new_x = x_1 + x_2
+      new_z = z_1 + z_2
+   in grid !? new_z >>= (!? new_x)
+
+-- | Returns a list of the immediate horizontal and vertical neighbours
+-- | of the provided position.
+neighbours :: [[a]] -> (Int, Int) -> [a]
+neighbours grid curr = neighbours' grid curr [(0, 1), (0, -1), (1, 0), (-1, 0)]
+
+-- | Returns a list of the neigbhours at the given offsets.
+neighbours' :: [[a]] -> (Int, Int) -> [(Int, Int)] -> [a]
+neighbours' grid curr offsets =
+  mapMaybe
+    (\offset -> neighbour grid curr offset)
+    offsets
