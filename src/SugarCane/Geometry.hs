@@ -1,8 +1,32 @@
+------------------------------------------------------------------------------
+-- sugarc -- Tools for obtaining optimal sugar cane farm layouts in Minecraft.
+-- Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+--
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with this program.  If not, see <https://www.gnu.org/licenses/>.
+------------------------------------------------------------------------------
+
+-- | Shape representation and grid manipulation.
 module SugarCane.Geometry where
 
 import Data.List ((!?))
 import Data.Maybe
 
+------------------------------------------------------------
+-- Shape Operations
+------------------------------------------------------------
+
+-- | A geometric shape used to constuct a `Farm`.
 data Shape
   = Square {sideLength :: Int}
   | Rectangle {width :: Int, height :: Int}
@@ -12,10 +36,10 @@ data Shape
 
 -- | Given some shape, determines if the corresponding coordinates lie within the shape's bounds.
 contains :: Shape -> Int -> Int -> Bool
-contains shape x y = case shape of
-  Square {sideLength = s} -> contains Rectangle {width = s, height = s} x y
-  Rectangle {width = w, height = h} -> (0 <= x && x < w) && (0 <= y && y < h)
-  Circle {diameter = d} -> contains Ellipse {width = d, height = d} x y
+contains shape x z = case shape of
+  Square {sideLength = s} -> contains Rectangle {width = s, height = s} x z
+  Rectangle {width = w, height = h} -> (0 <= x && x < w) && (0 <= z && z < h)
+  Circle {diameter = d} -> contains Ellipse {width = d, height = d} x z
   Ellipse {width = w, height = h} ->
     let hCentre = fromIntegral (w - 1) / 2 :: Float
         hSemiAxis = fromIntegral w / 2 :: Float
@@ -23,7 +47,7 @@ contains shape x y = case shape of
 
         vCentre = fromIntegral (h - 1) / 2 :: Float
         vSemiAxis = fromIntegral h / 2 :: Float
-        vDelta = fromIntegral y - vCentre
+        vDelta = fromIntegral z - vCentre
 
         hContrib = (hDelta * hDelta) / (hSemiAxis * hSemiAxis)
         vContrib = (vDelta * vDelta) / (vSemiAxis * vSemiAxis)
@@ -44,7 +68,8 @@ boxDimensions shape = case shape of
 -- Index Generation
 
 -- | Create a version of some grid with its indices exposed.
--- | Indices are zero-indexed.
+--
+-- Indices are zero-indexed and column major (@[z][x] <=> (x, z)@).
 indexGrid :: [[a]] -> [[(Int, Int, a)]]
 indexGrid xss =
   zipWith
@@ -60,7 +85,7 @@ deindex xss = [[val | (_, _, val) <- row] | row <- xss]
 
 -- Adjacency Calculations
 
--- | Returns the neigbour at `offset`, if one exists.
+-- | Returns the neigbour at @offset@, if one exists.
 neighbour :: [[a]] -> (Int, Int) -> (Int, Int) -> Maybe a
 neighbour grid curr offset =
   let (x_1, z_1) = curr
@@ -70,7 +95,7 @@ neighbour grid curr offset =
    in grid !? new_z >>= (!? new_x)
 
 -- | Returns a list of the immediate horizontal and vertical neighbours
--- | of the provided position.
+-- of the provided position.
 neighbours :: [[a]] -> (Int, Int) -> [a]
 neighbours grid curr = neighbours' grid curr [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
