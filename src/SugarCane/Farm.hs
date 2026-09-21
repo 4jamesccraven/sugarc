@@ -84,6 +84,20 @@ blockOne = blockMask (Square 1)
 allowOne :: (Int, Int) -> Farm -> Farm
 allowOne = allowMask (Square 1)
 
+-- | Makes an area unavailable to the farm based on a `Gravity` alignment.
+blockGravity :: Gravity -> Shape -> Farm -> Farm
+blockGravity = gravityMask' Blocked
+
+-- | Makes an area available to the farm based on a `Gravity` alignment.
+allowGravity :: Gravity -> Shape -> Farm -> Farm
+allowGravity = gravityMask' Available
+
+-- | Mask an area with semantic positioning.
+gravityMask' :: FarmBlock -> Gravity -> Shape -> Farm -> Farm
+gravityMask' state gravity maskShape f@Farm {width = farmWidth, height = farmHeight, blocks = _} =
+  let alignPos = alignShape (farmWidth, farmHeight) gravity maskShape
+   in blockMask' state maskShape alignPos f
+
 -- | Applies a shape mask to a farm, replacing every block contained by the shape
 -- with the given replacement.
 blockMask' :: FarmBlock -> Shape -> (Int, Int) -> Farm -> Farm

@@ -62,6 +62,69 @@ boxDimensions shape = case shape of
   Ellipse {width = w, height = h} -> (w, h)
 
 ------------------------------------------------------------
+-- Alignment and Placement
+------------------------------------------------------------
+
+-- | Describes horizontal and vertical alignment of a shape placed into another.
+data Gravity
+  = -- | Horizontal alignment only.
+    Horizontal HorizontalAlignment
+  | -- | Vertical alignment only.
+    Vertical VerticalAlignment
+  | -- | Combined vertical and horizontal alignment.
+    Combined VerticalAlignment HorizontalAlignment
+  deriving stock (Show, Eq)
+
+data HorizontalAlignment
+  = -- | Align to the left.
+    AlignLeft
+  | -- | Align in the middle.
+    AlignCentre
+  | -- | Align on the right.
+    AlignRight
+  deriving stock (Show, Eq, Read, Enum)
+
+data VerticalAlignment
+  = -- | Align to the top.
+    AlignTop
+  | -- | Align to the vertical centre.
+    AlignHorizon
+  | -- | Align to the bottom.
+    AlignBottom
+  deriving stock (Show, Eq, Read, Enum)
+
+-- | Convenience operator to combine alignments.
+(<+>) :: VerticalAlignment -> HorizontalAlignment -> Gravity
+(<+>) v h = Combined v h
+
+infixl 6 <+>
+
+-- | Convenience constructor for `Gravity`. Corresponds to both a horizontal
+-- and vertical centre.
+alignTrueCentre :: Gravity
+alignTrueCentre = AlignHorizon <+> AlignCentre
+
+-- | Given the bounding dimensions of some larger shape, a smaller shape
+-- is aligned into the larger using the `Gravity` type. Returns the
+-- coordinates of the top-left corner of the aligned smaller shape.
+alignShape :: (Int, Int) -> Gravity -> Shape -> (Int, Int)
+alignShape (farmWidth, farmHeight) gravity maskShape =
+  let (maskWidth, maskHeight) = boxDimensions maskShape
+      (vAlign, hAlign) = case gravity of
+        Horizontal h -> (AlignHorizon, h)
+        Vertical v -> (v, AlignCentre)
+        Combined v h -> (v, h)
+      z = case vAlign of
+        AlignTop -> 0
+        AlignBottom -> farmHeight - maskHeight
+        AlignHorizon -> (div (farmHeight - 1) 2) - (div (maskHeight - 1) 2)
+      x = case hAlign of
+        AlignLeft -> 0
+        AlignRight -> farmWidth - maskWidth
+        AlignCentre -> (div (farmWidth - 1) 2) - (div (maskWidth - 1) 2)
+   in (x, z)
+
+------------------------------------------------------------
 -- Grid Operations
 ------------------------------------------------------------
 
