@@ -71,13 +71,12 @@ boxDimensions shape = case shape of
 --
 -- Indices are zero-indexed and column major (@[z][x] <=> (x, z)@).
 indexGrid :: [[a]] -> [[(Int, Int, a)]]
-indexGrid xss =
+indexGrid =
   zipWith
     ( \r row ->
         zipWith (\c val -> (c, r, val)) [0 ..] row
     )
     [0 ..]
-    xss
 
 -- | De-index a grid
 deindex :: [[(Int, Int, a)]] -> [[a]]
@@ -101,7 +100,4 @@ neighbours grid curr = neighbours' grid curr [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
 -- | Returns a list of the neigbhours at the given offsets.
 neighbours' :: [[a]] -> (Int, Int) -> [(Int, Int)] -> [a]
-neighbours' grid curr offsets =
-  mapMaybe
-    (\offset -> neighbour grid curr offset)
-    offsets
+neighbours' grid curr = mapMaybe (neighbour grid curr)

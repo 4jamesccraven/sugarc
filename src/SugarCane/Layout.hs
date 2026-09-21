@@ -19,7 +19,7 @@
 -- | Representation and optimisation of a sugarcane farm in Minecraft.
 module SugarCane.Layout where
 
-import Data.List (findIndices, intercalate)
+import Data.List (elemIndices, intercalate)
 import SugarCane.Farm qualified as Farm
 import SugarCane.Geometry (deindex, indexGrid, neighbours)
 
@@ -52,7 +52,7 @@ instance Show Layout where
           Unirrigated -> "\x1b[93m▓\x1b[0m"
           Water -> "\x1b[94m░\x1b[0m"
           Blocked -> " "
-     in intercalate "\n" $ map concat [[displayOne block | block <- row] | row <- grid]
+     in intercalate "\n" $ [concat ([displayOne block | block <- row]) | row <- grid]
 
 -----------------------------------------------------------
 -- Layout Application
@@ -90,7 +90,7 @@ applyLayout offset Layout {width = w, height = h, grid = blocks} =
       shouldBeIrrigated :: Int -> Int -> LayoutBlock -> Bool
       shouldBeIrrigated x z block =
         block == Unirrigated
-          && any (\n -> n == Water) (neighbours waterGrid (x, z))
+          && elem Water (neighbours waterGrid (x, z))
 
       withIrrigation =
         [ [ (x, z, if shouldBeIrrigated x z val then Irrigated else val)
@@ -106,12 +106,12 @@ applyLayout offset Layout {width = w, height = h, grid = blocks} =
 
 -- | Determine how optimal a layout is by counting all `Irrigated` blocks.
 optimalityScore :: Layout -> Int
-optimalityScore lay = optimalityScore' Irrigated lay
+optimalityScore = optimalityScore' Irrigated
 
 -- | Determine how optimal a layout is based on the count of an arbitrary
 -- `LayoutBlock` state.
 optimalityScore' :: LayoutBlock -> Layout -> Int
-optimalityScore' state lay = length $ filter (\s -> s == state) (concat $ grid lay)
+optimalityScore' state lay = length $ concatMap (filter (== state)) (grid lay)
 
 -- | Finds the best offsets by optimising for the most possible irrigated blocks.
 optimalOffsets :: Farm.Farm -> [Int]
@@ -119,20 +119,20 @@ optimalOffsets f =
   let allLayouts = layouts f
       allScores = map optimalityScore allLayouts
       maxScore = maximum allScores
-   in findIndices (\s -> s == maxScore) allScores
+   in elemIndices maxScore allScores
 
 -- | Find all possible layouts for the farm.
 layouts :: Farm.Farm -> [Layout]
 layouts f =
   let farm = liftFarm f
-   in map (\c -> applyLayout c farm) [0 .. 4]
+   in map (`applyLayout` farm) [0 .. 4]
 
 -- | Finds the optimal `Layout`s for this particular farm.
 optimalLayout :: Farm.Farm -> [Layout]
 optimalLayout f =
   let farm = liftFarm f
       offsets = optimalOffsets f
-   in map (\c -> applyLayout c farm) offsets
+   in map (`applyLayout` farm) offsets
 
 -----------------------------------------------------------
 -- Conversions for `Farm` -> `Layout`

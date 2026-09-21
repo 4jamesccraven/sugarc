@@ -43,7 +43,7 @@ instance Show Farm where
   show (Farm {width = _, height = _, blocks = grid}) =
     let displayOne :: FarmBlock -> String
         displayOne state = if state == Available then "█" else " "
-     in intercalate "\n" $ map concat [[displayOne s | s <- row] | row <- grid]
+     in intercalate "\n" $ [concat ([displayOne s | s <- row]) | row <- grid]
 
 -- | Creates a 2D list with the provided width and height. All entries start out `Available`.
 farmGrid :: Int -> Int -> [[FarmBlock]]
@@ -55,7 +55,7 @@ shapedFarm shape =
   let (width, height) = boxDimensions shape
       thisShapeContains = contains shape
       grid =
-        [ [ if (thisShapeContains x y) then Available else Blocked
+        [ [ if thisShapeContains x y then Available else Blocked
           | x <- [0 .. width - 1]
           ]
         | y <- [0 .. height - 1]
