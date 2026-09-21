@@ -61,3 +61,48 @@ shapedFarm shape =
         | y <- [0 .. height - 1]
         ]
    in Farm {width = width, height = height, blocks = grid}
+
+------------------------------------------------------------
+-- Arbitrary Masking
+------------------------------------------------------------
+
+-- | Makes a shape whose top-left corner is at (boxX, boxZ) unavailable to the
+-- farm by marking the contained area as `Blocked`.
+blockMask :: Shape -> (Int, Int) -> Farm -> Farm
+blockMask = blockMask' Blocked
+
+-- | Makes a shape whose top-left corner is at (boxX, boxZ) available to the farm
+-- by marking the contained area as `Available`.
+allowMask :: Shape -> (Int, Int) -> Farm -> Farm
+allowMask = blockMask' Available
+
+-- | Makes the provided coordinate unavailable to the farm.
+blockOne :: (Int, Int) -> Farm -> Farm
+blockOne = blockMask (Square 1)
+
+-- | Makes the provided coordinate available to the farm.
+allowOne :: (Int, Int) -> Farm -> Farm
+allowOne = allowMask (Square 1)
+
+-- | Applies a shape mask to a farm, replacing every block contained by the shape
+-- with the given replacement.
+blockMask' :: FarmBlock -> Shape -> (Int, Int) -> Farm -> Farm
+blockMask' replacement maskShape (boxX, boxZ) Farm {width = farmW, height = farmH, blocks = blocks} =
+  let (maskW, maskH) = boxDimensions maskShape
+      -- A block should be masked if it's in the mask area and is part of the
+      -- mask shape.
+      inMask :: Int -> Int -> Bool
+      inMask x z =
+        boxX <= x
+          && x < boxX + maskW
+          && boxZ <= z
+          && z < boxZ + maskH
+          && contains maskShape (x - boxX) (z - boxZ)
+
+      -- Mask the appropriate blocks, copy the others.
+      grid = indexGrid blocks
+      newGrid =
+        [ [if inMask x z then replacement else val | (x, z, val) <- row]
+        | row <- grid
+        ]
+   in Farm {width = farmW, height = farmH, blocks = newGrid}
