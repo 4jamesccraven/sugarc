@@ -19,7 +19,7 @@
 -- | Representation and optimisation of a sugarcane farm in Minecraft.
 module SugarCane.Layout where
 
-import Data.List (elemIndices, intercalate)
+import Data.List (elemIndices, find, intercalate)
 import SugarCane.Farm qualified as Farm
 import SugarCane.Geometry (deindex, indexGrid, neighbours)
 
@@ -54,6 +54,15 @@ instance Show Layout where
           Blocked -> " "
      in intercalate "\n" $ [concat ([displayOne block | block <- row]) | row <- grid]
 
+-- | Creates "report" for the user explaining the phase and score of this particular layout.
+layoutReport :: Layout -> String
+layoutReport lay =
+  let p = case findPhase lay of
+        Just i -> show i
+        Nothing -> "unknown"
+      score = optimalityScore lay
+   in "Layout phase: " ++ show p ++ " score: " ++ show score ++ "\n" ++ show lay ++ "\n"
+
 -----------------------------------------------------------
 -- Layout Application
 -----------------------------------------------------------
@@ -69,6 +78,13 @@ mutableBlock b = b /= Blocked
 -- @2x + z ≡ c (mod 5)@
 phase :: Int -> Int -> Int
 phase x z = (2 * x + z) `mod` 5
+
+-- | Tries to find the phase of fully applied layout.
+findPhase :: Layout -> Maybe Int
+findPhase lay =
+  let blocks = indexGrid $ grid lay
+      coords = find (\(_, _, b) -> b == Water) $ concat blocks
+   in fmap (\(x, z, _) -> phase x z) coords
 
 -- | Applies an optimal sugarcane pattern to a farm. Does not guarantee offset optimality.
 applyLayout :: Int -> Layout -> Layout
