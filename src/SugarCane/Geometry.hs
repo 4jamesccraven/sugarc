@@ -95,7 +95,7 @@ data VerticalAlignment
 
 -- | Convenience operator to combine alignments.
 (<+>) :: VerticalAlignment -> HorizontalAlignment -> Gravity
-(<+>) v h = Combined v h
+(<+>) = Combined
 
 infixl 6 <+>
 
@@ -117,11 +117,11 @@ alignShape (farmWidth, farmHeight) gravity maskShape =
       z = case vAlign of
         AlignTop -> 0
         AlignBottom -> farmHeight - maskHeight
-        AlignHorizon -> (div (farmHeight - 1) 2) - (div (maskHeight - 1) 2)
+        AlignHorizon -> div (farmHeight - 1) 2 - div (maskHeight - 1) 2
       x = case hAlign of
         AlignLeft -> 0
         AlignRight -> farmWidth - maskWidth
-        AlignCentre -> (div (farmWidth - 1) 2) - (div (maskWidth - 1) 2)
+        AlignCentre -> div (farmWidth - 1) 2 - div (maskWidth - 1) 2
    in (x, z)
 
 ------------------------------------------------------------

@@ -57,9 +57,7 @@ instance Show Layout where
 -- | Creates "report" for the user explaining the phase and score of this particular layout.
 layoutReport :: Layout -> String
 layoutReport lay =
-  let p = case findPhase lay of
-        Just i -> show i
-        Nothing -> "unknown"
+  let p = maybe "unknown" show (findPhase lay)
       score = optimalityScore lay
    in "Layout phase: " ++ show p ++ " score: " ++ show score ++ "\n" ++ show lay ++ "\n"
 

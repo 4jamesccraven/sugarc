@@ -107,7 +107,7 @@ data ProgramInstruction
   | -- | Takes all optimal layouts.
     AllOptimal
   | -- | Picks a specific phase
-    PickLayout (Int)
+    PickLayout Int
 {- ORMOLU_ENABLE -}
 
 ------------------------------------------------------------
