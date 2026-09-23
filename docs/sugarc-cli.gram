@@ -1,0 +1,47 @@
+cli:
+    "from" shape generate_flags*
+    | "help"
+    | "version"
+
+generate_flags:
+    | ("-g" | "-gravity") gravity_val
+    | ("-b" | "-block") mask_arg
+    | ("-a" | "-allow") mask_arg
+    | ("-e" | "-emit") emission_arg
+    | ("-t" | "-take") selection_arg
+
+gravity_val:
+    | vertical_gravity ("+" | "|") horizontal_gravity
+    | vertical_gravity
+    | horizontal_gravity
+
+vertical_gravity:
+    | "top"
+    | "horizon"
+    | "bottom"
+
+horizontal_gravity:
+    | "left"
+    | ("center" | "centre")
+    | "right"
+
+mask_arg:
+    | shape             # Shape placed according to gravity
+    | int int           # Specific block
+    | shape "," int int # Shape with top left corner at provided block
+
+selection_arg:
+    | "all"  # All layouts
+    | "one"  # First Optimal (corresponds to `Whichever`)
+    | "any"  # All optimal layouts -- default
+    | "farm" # Just the farm
+    | int    # Phase specified by int
+
+emission_arg:
+    | ("-" | "stdout")
+
+shape:
+    | "circle" int
+    | "ellipse" int int
+    | "square" int
+    | "rectangle" int int
