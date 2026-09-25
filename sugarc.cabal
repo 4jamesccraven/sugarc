@@ -19,6 +19,7 @@ library
         SugarCane.Layout
         SugarCane.Farm
         SugarCane.Geometry
+        SugarCane.Parser.Common
     build-depends:    base ^>=4.20.2.0
     hs-source-dirs:   src
     default-language: GHC2024
