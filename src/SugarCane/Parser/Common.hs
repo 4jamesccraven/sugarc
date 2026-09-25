@@ -43,7 +43,6 @@ data ParserError
   | ExpectedDigit
   | ExpectedShape
   | ExpectedGravity
-  | UnmetCondition String
   | UnexpectedEOF
   deriving stock (Show, Eq)
 
@@ -110,7 +109,7 @@ parseToken str = Parser fn
 
 -- | Create a parser that expects a single digit.
 parseDigit :: Parser Char
-parseDigit = parseChar' isDigit (ExpectedDigit)
+parseDigit = parseChar' isDigit ExpectedDigit
 
 -- | Parse a full integer.
 parseInt :: Parser Int
@@ -136,25 +135,24 @@ parseShape =
     ExpectedShape
   where
     parseSquare =
-      ( parseToken "square"
-          *> parseWhiteSpace
-          *> (Square <$> parseInt)
-      )
+      parseToken "square"
+        *> parseWhiteSpace
+        *> (Square <$> parseInt)
+
     parseRectangle =
-      ( parseToken "rectangle"
-          *> parseWhiteSpace
-          *> (Rectangle <$> parseInt <*> (parseWhiteSpace *> parseInt))
-      )
+      parseToken "rectangle"
+        *> parseWhiteSpace
+        *> (Rectangle <$> parseInt <*> (parseWhiteSpace *> parseInt))
+
     parseCircle =
-      ( parseToken "circle"
-          *> parseWhiteSpace
-          *> (Circle <$> parseInt)
-      )
+      parseToken "circle"
+        *> parseWhiteSpace
+        *> (Circle <$> parseInt)
+
     parseEllipse =
-      ( parseToken "ellipse"
-          *> parseWhiteSpace
-          *> (Ellipse <$> parseInt <*> (parseWhiteSpace *> parseInt))
-      )
+      parseToken "ellipse"
+        *> parseWhiteSpace
+        *> (Ellipse <$> parseInt <*> (parseWhiteSpace *> parseInt))
 
 -- | Parse a gravity value.
 parseGravity :: Parser Gravity
@@ -166,7 +164,7 @@ parseGravity =
     )
     ExpectedGravity
   where
-    parseSep = (parseToken "|" <|> parseToken "+")
+    parseSep = parseToken "|" <|> parseToken "+"
 
     parseCombined =
       Combined
@@ -174,13 +172,11 @@ parseGravity =
         <*> (skipWhiteSpace *> parseSep *> skipWhiteSpace *> parseHorizontal)
 
     parseHorizontal =
-      ( (AlignLeft <$ parseToken "left")
-          <|> (AlignCentre <$ (parseToken "centre" <|> parseToken "center"))
-          <|> (AlignRight <$ parseToken "right")
-      )
+      AlignLeft <$ parseToken "left"
+        <|> (AlignCentre <$ (parseToken "centre" <|> parseToken "center"))
+        <|> (AlignRight <$ parseToken "right")
 
     parseVertical =
-      ( (AlignTop <$ parseToken "top")
-          <|> (AlignHorizon <$ parseToken "horizon")
-          <|> (AlignBottom <$ parseToken "bottom")
-      )
+      AlignTop <$ parseToken "top"
+        <|> (AlignHorizon <$ parseToken "horizon")
+        <|> (AlignBottom <$ parseToken "bottom")
