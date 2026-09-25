@@ -29,6 +29,7 @@ module SugarCane.Parser.Common where
 import Control.Applicative
 import Data.Char (isDigit, isSpace)
 import SugarCane.Geometry
+import SugarCane.Program
 
 ------------------------------------------------------------
 -- Parser Type
@@ -43,6 +44,7 @@ data ParserError
   | ExpectedDigit
   | ExpectedShape
   | ExpectedGravity
+  | ExpectedMaskArgs
   | UnexpectedEOF
   deriving stock (Show, Eq)
 
@@ -180,3 +182,25 @@ parseGravity =
       AlignTop <$ parseToken "top"
         <|> (AlignHorizon <$ parseToken "horizon")
         <|> (AlignBottom <$ parseToken "bottom")
+
+-- | Parser that constructs arguments for masking operations.
+parseMaskArgs :: Parser MaskArgs
+parseMaskArgs =
+  mapErr
+    (parseMAlign <|> parseGAlign <|> parseSAlign)
+    ExpectedMaskArgs
+  where
+    parseMAlign =
+      AlignManual
+        <$> parseShape
+        <*> ( skipWhiteSpace
+                *> parseToken ","
+                *> skipWhiteSpace
+                *> ((,) <$> parseInt <*> (parseWhiteSpace *> parseInt))
+            )
+
+    parseGAlign = AlignGravity <$> parseShape
+
+    parseSAlign =
+      AlignSingular
+        <$> ((,) <$> parseInt <*> (parseWhiteSpace *> parseInt))
