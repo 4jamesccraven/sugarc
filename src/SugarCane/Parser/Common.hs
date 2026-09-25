@@ -21,7 +21,7 @@
 -- Much of the design for this parser was inspired by Tsoding's pure-Haskell
 -- JSON Parser. The referenced source code is available at:
 --
--- https://github.com/tsoding/haskell-json/blob/8c5d63e37d67072b69eade833e141ce55ce44772/Main.hs#L70
+-- https://github.com/tsoding/haskell-json/blob/8c5d63e37d67072b69eade833e141ce55ce44772/Main.hs
 -- license: MIT
 -- retrieved: 24 September, 2026
 module SugarCane.Parser.Common where
