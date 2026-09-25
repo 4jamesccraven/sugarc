@@ -60,6 +60,13 @@ data EmissionType
   = Stdout
   deriving stock (Show, Eq)
 
+-- | The set of valid arguments to a Masking operation.
+data MaskArgs
+  = AlignGravity Shape
+  | AlignManual Shape (Int, Int)
+  | AlignSingular (Int, Int)
+  deriving stock (Show, Eq)
+
 ------------------------------------------------------------
 -- Sugarc Intermediate Representation
 ------------------------------------------------------------
@@ -72,34 +79,21 @@ data EmissionType
 -- TODO: Make sure I actually do this when I implement CLI ^ !!!
 {- ORMOLU_DISABLE -}
 data ProgramInstruction
-  =
-    --- State Manipulation ---
+  = --- State Manipulation ---
     -- | Defines the starting shape of a farm.
     From Shape
   | -- | Sets the gravity state for the program.
     SetGravity Gravity
   | -- | Defines the output type.
     Emit EmissionType
-
-    --- Negative Mask Operations ---
-  | -- | Removes a shape. Positioned based on current `Gravity`
-    GravityBlock Shape
-  | -- | Removes a shape. Top-left position must be provided.
-    Block Shape (Int, Int)
-  | -- | Removes a single block at the provided coordinates.
-    PrecisionBlock (Int, Int)
   |
-
-    --- Positive Mask Operations ---
-    -- | Adds a shape. Positioned based on current `Gravity`
-    GravityAllow Shape
-  | -- | Adds a shape. Top-left position must be provided.
-    Allow Shape (Int, Int)
-  | -- | Adds a single block at the provided coordinates.
-    PrecisionAllow (Int, Int)
+    --- Mask Operations ---
+    -- | Removes a shape.
+    Block MaskArgs
+  | -- | Adds a shape.
+    Allow MaskArgs
   |
-
-    --- Program Returns ---
+    --- Program Return Statements ---
     -- | Disregard equivalently offset farms. In other words, "just pick one, bro."
     Whichever
   | -- | Takes all layouts, regardless of optimality.
@@ -174,18 +168,18 @@ runInstruction state@ProgramState {gravity = gravity, result = result} instructi
   SetGravity g -> continue $ state {gravity = g}
   Emit e -> continue $ state {emission = e}
   --- Negative Masks ---
-  GravityBlock s ->
+  Block (AlignGravity s) ->
     withFarm state (blockGravity gravity s)
-  Block s pos ->
+  Block (AlignManual s pos) ->
     withFarm state (blockMask s pos)
-  PrecisionBlock pos ->
+  Block (AlignSingular pos) ->
     withFarm state (blockOne pos)
   --- Positive Masks ---
-  GravityAllow s ->
+  Allow (AlignGravity s) ->
     withFarm state (allowGravity gravity s)
-  Allow s pos ->
+  Allow (AlignManual s pos) ->
     withFarm state (allowMask s pos)
-  PrecisionAllow pos ->
+  Allow (AlignSingular pos) ->
     withFarm state (allowOne pos)
   --- Program Returns
   Whichever ->
