@@ -94,7 +94,9 @@ data ProgramInstruction
     Allow MaskArgs
   |
     --- Program Return Statements ---
-    -- | Disregard equivalently offset farms. In other words, "just pick one, bro."
+    -- | Only output the farm, do not optimise the layout.
+    OnlyFarms
+  |  -- | Disregard equivalently offset farms. In other words, "just pick one, bro."
     Whichever
   | -- | Takes all layouts, regardless of optimality.
     AllOfThem
@@ -102,6 +104,7 @@ data ProgramInstruction
     AllOptimal
   | -- | Picks a specific phase
     PickLayout Int
+  deriving stock (Show, Eq)
 {- ORMOLU_ENABLE -}
 
 ------------------------------------------------------------
@@ -182,6 +185,8 @@ runInstruction state@ProgramState {gravity = gravity, result = result} instructi
   Allow (AlignSingular pos) ->
     withFarm state (allowOne pos)
   --- Program Returns
+  OnlyFarms ->
+    exitAs state FarmState
   Whichever ->
     exitAs state (FinalLayout . (!! 0) . optimalLayout)
   AllOfThem ->

@@ -45,6 +45,7 @@ data ParserError
   | ExpectedShape
   | ExpectedGravity
   | ExpectedMaskArgs
+  | CLIExpectedFlag
   | UnexpectedEOF
   deriving stock (Show, Eq)
 
@@ -129,10 +130,12 @@ skipWhiteSpace = many $ parseChar' isSpace EmptyError
 parseShape :: Parser Shape
 parseShape =
   mapErr
-    ( parseSquare
-        <|> parseRectangle
-        <|> parseCircle
-        <|> parseEllipse
+    ( asum
+        [ parseSquare,
+          parseRectangle,
+          parseCircle,
+          parseEllipse
+        ]
     )
     ExpectedShape
   where
