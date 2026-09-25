@@ -85,7 +85,7 @@ mapErr parser err = Parser $ \input ->
 -- Parsers
 ------------------------------------------------------------
 
--- | Create a parser that expects a single character.
+-- | Parser that expects a single character.
 parseChar :: Char -> Parser Char
 parseChar c = parseChar' (== c) (ExpectedChar c)
 
@@ -98,7 +98,7 @@ parseChar' predicate err = Parser fn
       | otherwise = Left err
     fn _ = Left UnexpectedEOF
 
--- | Create a parser that expects a specific token.
+-- | Parser that expects a specific token.
 parseToken :: String -> Parser String
 parseToken str = Parser fn
   where
@@ -107,23 +107,23 @@ parseToken str = Parser fn
         Left _ -> Left $ ExpectedToken str
         result -> result
 
--- | Create a parser that expects a single digit.
+-- | Parser that expects a single digit.
 parseDigit :: Parser Char
 parseDigit = parseChar' isDigit ExpectedDigit
 
--- | Parse a full integer.
+-- | Parser that creates a full integer.
 parseInt :: Parser Int
 parseInt = read <$> some parseDigit
 
--- | Parses any amount of whitespace.
+-- | Parser that expects some amount of whitespace.
 parseWhiteSpace :: Parser String
 parseWhiteSpace = some $ parseChar' isSpace ExpectedWhitespace
 
--- | Skips whitespace.
+-- | Parser that expects any amount of whitespace, including none.
 skipWhiteSpace :: Parser String
 skipWhiteSpace = many $ parseChar' isSpace EmptyError
 
--- | Parses a shape.
+-- | Parser that constructs a shape.
 parseShape :: Parser Shape
 parseShape =
   mapErr
@@ -154,7 +154,7 @@ parseShape =
         *> parseWhiteSpace
         *> (Ellipse <$> parseInt <*> (parseWhiteSpace *> parseInt))
 
--- | Parse a gravity value.
+-- | Parser that constructs a gravity value.
 parseGravity :: Parser Gravity
 parseGravity =
   mapErr
