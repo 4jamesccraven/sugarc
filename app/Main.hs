@@ -22,6 +22,8 @@ module Main (main) where
 import SugarCane.Parser.CLI
 import SugarCane.Program
 
+-- | Ensures that at least one take instruction is present
+-- (default: All Optimal Layouts)
 ensureTake :: [ProgramInstruction] -> [ProgramInstruction]
 ensureTake instructions
   | any isTake instructions = instructions
