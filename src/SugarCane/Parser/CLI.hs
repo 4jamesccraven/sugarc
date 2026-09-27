@@ -20,7 +20,6 @@
 module SugarCane.Parser.CLI where
 
 import Control.Applicative
-import Data.List (intercalate)
 import SugarCane.Parser.Common
 import SugarCane.Program
 import System.Environment (getArgs)
@@ -35,14 +34,12 @@ data CLIFinalBehaviour
 
 -- | Runs the CLI Parser.
 runCliParser :: IO (Either ParserError CLIFinalBehaviour)
-runCliParser = do
-  args <- getArgs
-  pure $ runCliParser' $ intercalate " " args
+runCliParser = do runCliParser' . unwords <$> getArgs
 
 -- | Parses the CLI from a set of args.
 runCliParser' :: String -> Either ParserError CLIFinalBehaviour
 runCliParser' args = case snd <$> runParser parseCLI args of
-  Left (ExpectedToken "from") -> Right $ CLIExitHelp
+  Left (ExpectedToken "from") -> Right CLIExitHelp
   result -> result
 
 -- | Create a parser that parses the entire CLI.
@@ -50,12 +47,12 @@ parseCLI :: Parser CLIFinalBehaviour
 parseCLI =
   foldl1
     (<|>)
-    [ (CLIPrintHelp <$ (parseToken "help" <|> parseFlag "help")),
-      (CLIPrintHelp <$ (parseToken "version" <|> parseFlag "version")),
-      (CLIRunProgram <$> parseProgram)
+    [ CLIPrintHelp <$ (parseToken "help" <|> parseFlag "help"),
+      CLIPrintHelp <$ (parseToken "version" <|> parseFlag "version"),
+      CLIRunProgram <$> parseProgram
     ]
   where
-    parseProgramStart = ((: []) . From) <$> (parseToken "from" *> skipWhiteSpace *> parseShape)
+    parseProgramStart = (: []) . From <$> (parseToken "from" *> skipWhiteSpace *> parseShape)
     parseProgram = (++) <$> parseProgramStart <*> many parseNextOpt <* parseEof
       where
         parseNextOpt = skipWhiteSpace *> peekChar (== '-') *> parseOpt
@@ -101,10 +98,10 @@ parseOpt =
       parseFlag "take"
         *> parseVal
           ( asum
-              [ (AllOfThem <$ parseToken "all"),
-                (Whichever <$ parseToken "one"),
-                (AllOptimal <$ parseToken "any"),
-                (OnlyFarms <$ parseToken "farm"),
-                (PickLayout <$> parseInt)
+              [ AllOfThem <$ parseToken "all",
+                Whichever <$ parseToken "one",
+                AllOptimal <$ parseToken "any",
+                OnlyFarms <$ parseToken "farm",
+                PickLayout <$> parseInt
               ]
           )
