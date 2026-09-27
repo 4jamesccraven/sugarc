@@ -28,6 +28,7 @@ data CLIFinalBehaviour
   = CLIPrintHelp
   | CLIPrintVersion
   | CLIRunProgram [ProgramInstruction]
+  | CLIExitHelp
   deriving stock (Show, Eq)
 
 -- | Runs the CLI Parser.
@@ -38,7 +39,9 @@ runCliParser = do
 
 -- | Parses the CLI from a set of args.
 runCliParser' :: String -> Either ParserError CLIFinalBehaviour
-runCliParser' args = snd <$> runParser parseCLI args
+runCliParser' args = case snd <$> runParser parseCLI args of
+  Left (ExpectedToken "from") -> Right $ CLIExitHelp
+  result -> result
 
 -- | Create a parser that parses the entire CLI.
 parseCLI :: Parser CLIFinalBehaviour

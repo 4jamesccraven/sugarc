@@ -76,7 +76,6 @@ data MaskArgs
 -- This is an IR for a sugarc "program." This does not define all
 -- possible external APIs. For example, the CLI simplifies all
 -- positive masking operations into one flag.
--- TODO: Make sure I actually do this when I implement CLI ^ !!!
 {- ORMOLU_DISABLE -}
 data ProgramInstruction
   = --- State Manipulation ---
