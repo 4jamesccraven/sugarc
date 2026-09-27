@@ -39,14 +39,16 @@ import SugarCane.Program
 data ParserError
   = EmptyError
   | ExpectedWhitespace
+  | ExpectedEOF
   | ExpectedChar Char
   | ExpectedToken String
   | ExpectedDigit
   | ExpectedShape
   | ExpectedGravity
   | ExpectedMaskArgs
-  | CLIExpectedFlag
+  | Committed ParserError
   | UnexpectedEOF
+  | CLIExpectedFlag
   deriving stock (Show, Eq)
 
 newtype Parser a = Parser
@@ -75,18 +77,47 @@ instance Alternative (Either ParserError) where
 instance Alternative Parser where
   empty = Parser $ const empty
   (<|>) (Parser left) (Parser right) =
-    Parser $ \input -> left input <|> right input
+    Parser $ \input ->
+      case left input of
+        Left (Committed err) -> Left (Committed err)
+        Left _ -> right input
+        Right result -> Right result
 
 -- | Run a parser and replace its error if it fails.
 mapErr :: Parser a -> ParserError -> Parser a
 mapErr parser err = Parser $ \input ->
   case runParser parser input of
+    Left (Committed original) -> Left (Committed original)
     Left _ -> Left err
     result -> result
+
+-- | Commits to this parser's error being the "source."
+--
+-- When combined with `(<|>)`, this allows a local failure of an almost-valid
+-- parse to become prioritised over other paths.
+commit :: Parser a -> Parser a
+commit (Parser p) =
+  Parser $ \input ->
+    case p input of
+      Left err -> Left (Committed err)
+      result -> result
 
 ------------------------------------------------------------
 -- Parsers
 ------------------------------------------------------------
+
+-- | Parser that expects input to have ended.
+parseEof :: Parser ()
+parseEof = Parser $ \case
+  "" -> Right ("", ())
+  _ -> Left ExpectedEOF
+
+-- | Parses a character satisfying a predicate without consuming it.
+peekChar :: (Char -> Bool) -> Parser Char
+peekChar predicate = Parser $ \case
+  input@(c : _)
+    | predicate c -> Right (input, c)
+  _ -> Left EmptyError
 
 -- | Parser that expects a single character.
 parseChar :: Char -> Parser Char

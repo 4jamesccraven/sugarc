@@ -1,7 +1,23 @@
+------------------------------------------------------------------------------
+-- sugarc -- Tools for obtaining optimal sugar cane farm layouts in Minecraft.
+-- Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+--
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with this program.  If not, see <https://www.gnu.org/licenses/>.
+------------------------------------------------------------------------------
 module SugarCane.Parser.CLI where
 
 import Control.Applicative
-import Data.Char (toLower)
 import Data.List (intercalate)
 import SugarCane.Parser.Common
 import SugarCane.Program
@@ -18,26 +34,26 @@ data CLIFinalBehaviour
 runCliParser :: IO (Either ParserError CLIFinalBehaviour)
 runCliParser = do
   args <- getArgs
-  pure $ runCliParser' args
+  pure $ runCliParser' $ intercalate " " args
 
 -- | Parses the CLI from a set of args.
-runCliParser' :: [String] -> Either ParserError CLIFinalBehaviour
-runCliParser' args =
-  let joined = intercalate " " args
-      cli = map toLower joined
-   in snd <$> runParser parseCLI cli
+runCliParser' :: String -> Either ParserError CLIFinalBehaviour
+runCliParser' args = snd <$> runParser parseCLI args
 
 -- | Create a parser that parses the entire CLI.
 parseCLI :: Parser CLIFinalBehaviour
 parseCLI =
-  asum
+  foldl1
+    (<|>)
     [ (CLIPrintHelp <$ (parseToken "help" <|> parseFlag "help")),
       (CLIPrintHelp <$ (parseToken "version" <|> parseFlag "version")),
       (CLIRunProgram <$> parseProgram)
     ]
   where
     parseProgramStart = ((: []) . From) <$> (parseToken "from" *> skipWhiteSpace *> parseShape)
-    parseProgram = (++) <$> parseProgramStart <*> many (skipWhiteSpace *> parseOpt)
+    parseProgram = (++) <$> parseProgramStart <*> many parseNextOpt <* parseEof
+      where
+        parseNextOpt = skipWhiteSpace *> peekChar (== '-') *> parseOpt
 
 -- | Parser that parses a named CLI flag.
 --
@@ -49,6 +65,10 @@ parseFlag name = parseFlag' name <|> parseFlag' (take 1 name)
 -- | Parser that parses a named CLI flag.
 parseFlag' :: String -> Parser String
 parseFlag' name = parseToken ("-" ++ name)
+
+-- | Parser that parses the value after a flag has been successfully parsed.
+parseVal :: Parser a -> Parser a
+parseVal p = commit (skipWhiteSpace *> p)
 
 -- | Parser that parses the type of output for the program.
 parseEmission :: Parser EmissionType
@@ -68,18 +88,18 @@ parseOpt =
     )
     CLIExpectedFlag
   where
-    parseOptG = SetGravity <$> (parseFlag "gravity" *> skipWhiteSpace *> parseGravity)
-    parseOptB = Block <$> (parseFlag "block" *> skipWhiteSpace *> parseMaskArgs)
-    parseOptA = Allow <$> (parseFlag "allow" *> skipWhiteSpace *> parseMaskArgs)
-    parseOptE = Emit <$> (parseFlag "emit" *> skipWhiteSpace *> parseEmission)
+    parseOptG = SetGravity <$> (parseFlag "gravity" *> parseVal parseGravity)
+    parseOptB = Block <$> (parseFlag "block" *> parseVal parseMaskArgs)
+    parseOptA = Allow <$> (parseFlag "allow" *> parseVal parseMaskArgs)
+    parseOptE = Emit <$> (parseFlag "emit" *> parseVal parseEmission)
     parseOptT =
       parseFlag "take"
-        *> skipWhiteSpace
-        *> ( asum
-               [ (AllOfThem <$ parseToken "all"),
-                 (Whichever <$ parseToken "one"),
-                 (AllOptimal <$ parseToken "any"),
-                 (OnlyFarms <$ parseToken "farm"),
-                 (PickLayout <$> parseInt)
-               ]
-           )
+        *> parseVal
+          ( asum
+              [ (AllOfThem <$ parseToken "all"),
+                (Whichever <$ parseToken "one"),
+                (AllOptimal <$ parseToken "any"),
+                (OnlyFarms <$ parseToken "farm"),
+                (PickLayout <$> parseInt)
+              ]
+          )
