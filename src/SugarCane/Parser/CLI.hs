@@ -15,6 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ------------------------------------------------------------------------------
+
+-- | Parsing functionality specific to the CLI
 module SugarCane.Parser.CLI where
 
 import Control.Applicative
