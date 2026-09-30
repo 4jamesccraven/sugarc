@@ -56,7 +56,7 @@ parseCLI =
   foldl1
     (<|>)
     [ CLIPrintHelp <$ parseSubcommand "help",
-      CLIPrintHelp <$ parseSubcommand "version",
+      CLIPrintVersion <$ parseSubcommand "version",
       CLIRunProgram <$> parseProgram
     ]
   where

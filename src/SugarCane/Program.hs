@@ -125,6 +125,21 @@ data ProgramInstruction
   deriving stock (Show, Eq)
 {- ORMOLU_ENABLE -}
 
+-- | Ensures that at least one take instruction is present
+-- (default: All Optimal Layouts)
+ensureTake :: [ProgramInstruction] -> [ProgramInstruction]
+ensureTake instructions
+  | any isTake instructions = instructions
+  | otherwise = instructions ++ [AllOptimal]
+  where
+    isTake instruction = case instruction of
+      Whichever -> True
+      AllOfThem -> True
+      AllOptimal -> True
+      OnlyFarms -> True
+      PickLayout _ -> True
+      _ -> False
+
 ------------------------------------------------------------
 -- Control Flow
 ------------------------------------------------------------

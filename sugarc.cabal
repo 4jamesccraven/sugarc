@@ -19,6 +19,7 @@ library
         SugarCane.Layout
         SugarCane.Farm
         SugarCane.Geometry
+        SugarCane.Info
         SugarCane.Parser.Common
         SugarCane.Parser.CLI
     build-depends:    base ^>=4.20.2.0

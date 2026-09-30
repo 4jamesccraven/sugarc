@@ -19,31 +19,18 @@
 -- | Entry point for the @sugarc@ executable.
 module Main (main) where
 
+import SugarCane.Info
 import SugarCane.Parser.CLI
 import SugarCane.Program
-
--- | Ensures that at least one take instruction is present
--- (default: All Optimal Layouts)
-ensureTake :: [ProgramInstruction] -> [ProgramInstruction]
-ensureTake instructions
-  | any isTake instructions = instructions
-  | otherwise = instructions ++ [AllOptimal]
-  where
-    isTake instruction = case instruction of
-      Whichever -> True
-      AllOfThem -> True
-      AllOptimal -> True
-      OnlyFarms -> True
-      PickLayout _ -> True
-      _ -> False
+import System.Exit
 
 main :: IO ()
 main = do
   doWhat <- runCliParser
   case doWhat of
-    Right CLIPrintHelp -> putStrLn "TODO"
-    Right CLIExitHelp -> putStrLn "TODO (but bad)"
-    Right CLIPrintVersion -> putStrLn "TODO"
+    Right CLIPrintHelp -> putStrLn helpMessage
+    Right CLIExitHelp -> putStrLn helpMessage >> exitWith (ExitFailure 1)
+    Right CLIPrintVersion -> putStrLn $ "sugarc " ++ versionString
     Right (CLIRunProgram parsed) ->
       let instructions = ensureTake parsed
        in case runProgram instructions of
