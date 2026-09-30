@@ -47,15 +47,29 @@ parseCLI :: Parser CLIFinalBehaviour
 parseCLI =
   foldl1
     (<|>)
-    [ CLIPrintHelp <$ (parseToken "help" <|> parseFlag "help"),
-      CLIPrintHelp <$ (parseToken "version" <|> parseFlag "version"),
+    [ CLIPrintHelp <$ parseSubcommand "help",
+      CLIPrintHelp <$ parseSubcommand "version",
       CLIRunProgram <$> parseProgram
     ]
   where
-    parseProgramStart = (: []) . From <$> (parseToken "from" *> skipWhiteSpace *> parseShape)
+    parseProgramStart = (: []) . From <$> (parseSubcommand "from" *> skipWhiteSpace *> parseShape)
     parseProgram = (++) <$> parseProgramStart <*> many parseNextOpt <* parseEof
       where
         parseNextOpt = skipWhiteSpace *> peekChar (== '-') *> parseOpt
+
+-- | Parses a top-level command for the program.
+--
+-- The most permissive flag parser, allows ffmpeg-like, UNIX long and short,
+-- and subcommand styles (e.g., @help@, @--help@, @-help@, and @-h@ are all
+-- accepted).
+parseSubcommand :: String -> Parser String
+parseSubcommand name =
+  mapErr
+    ( parseToken name
+        <|> parseToken ("--" ++ name)
+        <|> parseFlag name
+    )
+    CLIExpectedSubcommand
 
 -- | Parser that parses a named CLI flag.
 --

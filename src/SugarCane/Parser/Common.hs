@@ -49,6 +49,7 @@ data ParserError
   | Committed ParserError
   | UnexpectedEOF
   | CLIExpectedFlag
+  | CLIExpectedSubcommand
   deriving stock (Show, Eq)
 
 newtype Parser a = Parser
