@@ -45,12 +45,32 @@ data ParserError
   | ExpectedDigit
   | ExpectedShape
   | ExpectedGravity
+  | ExpectedHGravity
+  | ExpectedVGravity
   | ExpectedMaskArgs
-  | Committed ParserError
   | UnexpectedEOF
   | CLIExpectedFlag
   | CLIExpectedSubcommand
-  deriving stock (Show, Eq)
+  | Committed ParserError String
+  deriving stock (Eq)
+
+instance Show ParserError where
+  show err = case err of
+    EmptyError -> "«empty parser error»"
+    ExpectedWhitespace -> "expected whitespace"
+    ExpectedEOF -> "unexpected input past end"
+    ExpectedChar c -> "expected char `" ++ [c] ++ "`"
+    ExpectedToken t -> "expected token `" ++ t ++ "`"
+    ExpectedDigit -> "expected a numerical value"
+    ExpectedShape -> "expected a shape"
+    ExpectedGravity -> "expected a gravity alignment value"
+    ExpectedHGravity -> "expected a horizontal gravity value (e.g., `left`, `centre`, or `right`)"
+    ExpectedVGravity -> "expected a vertical gravity value (e.g., `top`, `horizon`, or `bottom`)"
+    ExpectedMaskArgs -> "invalid arguments to mask"
+    UnexpectedEOF -> "input ended unexpectedly"
+    CLIExpectedFlag -> "expected additional flags"
+    CLIExpectedSubcommand -> "expected a subcommand"
+    Committed e ctx -> ctx ++ ": " ++ show e
 
 newtype Parser a = Parser
   { runParser :: String -> Either ParserError (String, a)
@@ -80,7 +100,7 @@ instance Alternative Parser where
   (<|>) (Parser left) (Parser right) =
     Parser $ \input ->
       case left input of
-        Left (Committed err) -> Left (Committed err)
+        Left (Committed err ctx) -> Left (Committed err ctx)
         Left _ -> right input
         Right result -> Right result
 
@@ -88,7 +108,7 @@ instance Alternative Parser where
 mapErr :: Parser a -> ParserError -> Parser a
 mapErr parser err = Parser $ \input ->
   case runParser parser input of
-    Left (Committed original) -> Left (Committed original)
+    Left (Committed original ctx) -> Left (Committed original ctx)
     Left _ -> Left err
     result -> result
 
@@ -96,11 +116,11 @@ mapErr parser err = Parser $ \input ->
 --
 -- When combined with `(<|>)`, this allows a local failure of an almost-valid
 -- parse to become prioritised over other paths.
-commit :: Parser a -> Parser a
-commit (Parser p) =
+commit :: String -> Parser a -> Parser a
+commit ctx (Parser p) =
   Parser $ \input ->
     case p input of
-      Left err -> Left (Committed err)
+      Left err -> Left (Committed err ctx)
       result -> result
 
 ------------------------------------------------------------
@@ -158,6 +178,10 @@ parseWhiteSpace = some $ parseChar' isSpace ExpectedWhitespace
 skipWhiteSpace :: Parser String
 skipWhiteSpace = many $ parseChar' isSpace EmptyError
 
+-- | Parser that parses the type of output for the program.
+parseEmission :: Parser EmissionType
+parseEmission = Stdout <$ (parseToken "stdout" <|> parseToken "-")
+
 -- | Parser that constructs a shape.
 parseShape :: Parser Shape
 parseShape =
@@ -173,23 +197,35 @@ parseShape =
   where
     parseSquare =
       parseToken "square"
-        *> parseWhiteSpace
-        *> (Square <$> parseInt)
+        *> commit
+          "shape square"
+          ( parseWhiteSpace
+              *> (Square <$> parseInt)
+          )
 
     parseRectangle =
       parseToken "rectangle"
-        *> parseWhiteSpace
-        *> (Rectangle <$> parseInt <*> (parseWhiteSpace *> parseInt))
+        *> commit
+          "shape rectangle"
+          ( parseWhiteSpace
+              *> (Rectangle <$> parseInt <*> (parseWhiteSpace *> parseInt))
+          )
 
     parseCircle =
       parseToken "circle"
-        *> parseWhiteSpace
-        *> (Circle <$> parseInt)
+        *> commit
+          "shape circle"
+          ( parseWhiteSpace
+              *> (Circle <$> parseInt)
+          )
 
     parseEllipse =
       parseToken "ellipse"
-        *> parseWhiteSpace
-        *> (Ellipse <$> parseInt <*> (parseWhiteSpace *> parseInt))
+        *> commit
+          "shape ellipse"
+          ( parseWhiteSpace
+              *> (Ellipse <$> parseInt <*> (parseWhiteSpace *> parseInt))
+          )
 
 -- | Parser that constructs a gravity value.
 parseGravity :: Parser Gravity
@@ -206,12 +242,18 @@ parseGravity =
     parseCombined =
       Combined
         <$> parseVertical
-        <*> (skipWhiteSpace *> parseSep *> skipWhiteSpace *> parseHorizontal)
+        <*> ( skipWhiteSpace
+                *> parseSep
+                *> commit "incomplete combined value" (skipWhiteSpace *> parseHorizontal)
+            )
 
     parseHorizontal =
-      AlignLeft <$ parseToken "left"
-        <|> (AlignCentre <$ (parseToken "centre" <|> parseToken "center"))
-        <|> (AlignRight <$ parseToken "right")
+      mapErr
+        ( AlignLeft <$ parseToken "left"
+            <|> (AlignCentre <$ (parseToken "centre" <|> parseToken "center"))
+            <|> (AlignRight <$ parseToken "right")
+        )
+        ExpectedHGravity
 
     parseVertical =
       AlignTop <$ parseToken "top"

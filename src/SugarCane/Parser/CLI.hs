@@ -32,6 +32,10 @@ data CLIFinalBehaviour
   | CLIExitHelp
   deriving stock (Show, Eq)
 
+------------------------------------------------------------
+-- Top Level Runners
+------------------------------------------------------------
+
 -- | Runs the CLI Parser.
 runCliParser :: IO (Either ParserError CLIFinalBehaviour)
 runCliParser = do runCliParser' . unwords <$> getArgs
@@ -41,6 +45,10 @@ runCliParser' :: String -> Either ParserError CLIFinalBehaviour
 runCliParser' args = case snd <$> runParser parseCLI args of
   Left (ExpectedToken "from") -> Right CLIExitHelp
   result -> result
+
+------------------------------------------------------------
+-- Parsers
+------------------------------------------------------------
 
 -- | Create a parser that parses the entire CLI.
 parseCLI :: Parser CLIFinalBehaviour
@@ -83,12 +91,8 @@ parseFlag' :: String -> Parser String
 parseFlag' name = parseToken ("-" ++ name)
 
 -- | Parser that parses the value after a flag has been successfully parsed.
-parseVal :: Parser a -> Parser a
-parseVal p = commit (skipWhiteSpace *> p)
-
--- | Parser that parses the type of output for the program.
-parseEmission :: Parser EmissionType
-parseEmission = Stdout <$ (parseToken "stdout" <|> parseToken "-")
+parseVal :: String -> Parser a -> Parser a
+parseVal ctx p = commit ctx (skipWhiteSpace *> p)
 
 -- | Parser that parses any command line option into an instruction.
 parseOpt :: Parser ProgramInstruction
@@ -104,18 +108,20 @@ parseOpt =
     )
     CLIExpectedFlag
   where
-    parseOptG = SetGravity <$> (parseFlag "gravity" *> parseVal parseGravity)
-    parseOptB = Block <$> (parseFlag "block" *> parseVal parseMaskArgs)
-    parseOptA = Allow <$> (parseFlag "allow" *> parseVal parseMaskArgs)
-    parseOptE = Emit <$> (parseFlag "emit" *> parseVal parseEmission)
+    optParser :: String -> Parser a -> Parser a
+    optParser name parser = parseFlag name *> parseVal ("arguments to flag `-" ++ name ++ "`") parser
+    parseOptG = SetGravity <$> optParser "gravity" parseGravity
+    parseOptB = Block <$> optParser "block" parseMaskArgs
+    parseOptA = Allow <$> optParser "allow" parseMaskArgs
+    parseOptE = Emit <$> optParser "emit" parseEmission
     parseOptT =
-      parseFlag "take"
-        *> parseVal
-          ( asum
-              [ AllOfThem <$ parseToken "all",
-                Whichever <$ parseToken "one",
-                AllOptimal <$ parseToken "any",
-                OnlyFarms <$ parseToken "farm",
-                PickLayout <$> parseInt
-              ]
-          )
+      optParser
+        "take"
+        ( asum
+            [ AllOfThem <$ parseToken "all",
+              Whichever <$ parseToken "one",
+              AllOptimal <$ parseToken "any",
+              OnlyFarms <$ parseToken "farm",
+              PickLayout <$> parseInt
+            ]
+        )
