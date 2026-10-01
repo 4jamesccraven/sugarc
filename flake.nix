@@ -1,5 +1,5 @@
 {
-  description = "";
+  description = "Tools for obtaining optimal sugar cane farm layouts in Minecraft";
 
   inputs.nixpkgs.url = "https://nixos.org/channels/nixpkgs-unstable/nixexprs.tar.xz";
 
@@ -17,6 +17,15 @@
         ] (system: function nixpkgs.legacyPackages.${system});
     in
     {
+      packages = eachDefaultSystem (pkgs: rec {
+        default = sugarc;
+        sugarc = pkgs.callPackage ./sugarc.nix { };
+      });
+
+      overlays.default = _final: prev: {
+        sugarc = prev.callPackage ./sugarc.nix { };
+      };
+
       devShells = eachDefaultSystem (pkgs: {
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
@@ -26,6 +35,7 @@
             haskell-language-server
             fourmolu
             hlint
+            statix
           ];
         };
       });
