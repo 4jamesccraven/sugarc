@@ -45,7 +45,7 @@ data Layout = Layout
   deriving stock (Eq)
 
 instance Show Layout where
-  show Layout {width = _, height = _, grid = grid} =
+  show Layout {grid = grid} =
     let displayOne :: LayoutBlock -> String
         displayOne b = case b of
           Irrigated -> "\x1b[92m█\x1b[0m"

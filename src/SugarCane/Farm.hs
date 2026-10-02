@@ -41,13 +41,9 @@ data Farm = Farm
 
 instance Show Farm where
   show (Farm {width = _, height = _, blocks = grid}) =
-    let displayOne :: FarmBlock -> String
-        displayOne state = if state == Available then "█" else " "
-     in intercalate "\n" $ [concat ([displayOne s | s <- row]) | row <- grid]
-
--- | Creates a 2D list with the provided width and height. All entries start out `Available`.
-farmGrid :: Int -> Int -> [[FarmBlock]]
-farmGrid width height = replicate height $ replicate width Available
+    intercalate "\n" $ [concat ([displayOne s | s <- row]) | row <- grid]
+    where
+      displayOne state = if state == Available then "█" else " "
 
 -- | Creates a farm of the provided shape.
 shapedFarm :: Shape -> Farm
@@ -92,11 +88,11 @@ blockGravity = gravityMask' Blocked
 allowGravity :: Gravity -> Shape -> Farm -> Farm
 allowGravity = gravityMask' Available
 
--- | Mask an area with semantic positioning.
+-- | Mask an area with alignment based on a `Gravity` value.
 gravityMask' :: FarmBlock -> Gravity -> Shape -> Farm -> Farm
-gravityMask' state gravity maskShape f@Farm {width = farmWidth, height = farmHeight, blocks = _} =
+gravityMask' replacement gravity maskShape f@Farm {width = farmWidth, height = farmHeight} =
   let alignPos = alignShape (farmWidth, farmHeight) gravity maskShape
-   in blockMask' state maskShape alignPos f
+   in blockMask' replacement maskShape alignPos f
 
 -- | Applies a shape mask to a farm, replacing every block contained by the shape
 -- with the given replacement.
