@@ -22,7 +22,10 @@ library
         SugarCane.Info
         SugarCane.Parser.Common
         SugarCane.Parser.CLI
-    build-depends:    base ^>=4.20.2.0
+    other-modules:
+        SugarCane.Internal.ANSI
+    build-depends:
+        base ^>=4.20.2.0
     hs-source-dirs:   src
     default-language: GHC2024
 

@@ -27,16 +27,22 @@
       };
 
       devShells = eachDefaultSystem (pkgs: {
-        default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            ghc
-            cabal-install
-            ghcid
-            haskell-language-server
-            fourmolu
-            hlint
-            statix
-          ];
+        default = pkgs.haskellPackages.shellFor {
+          # Haskell Dependencies derived from the sugarc package
+          packages = hpkgs: [ (hpkgs.callPackage ./sugarc.nix { }) ];
+
+          # "Normal" packages
+          nativeBuildInputs = builtins.attrValues {
+            inherit (pkgs)
+              ghc
+              cabal-install
+              ghcid
+              haskell-language-server
+              fourmolu
+              hlint
+              statix
+              ;
+          };
         };
       });
     };

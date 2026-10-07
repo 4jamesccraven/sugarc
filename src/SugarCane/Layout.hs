@@ -22,6 +22,8 @@ module SugarCane.Layout where
 import Data.List (elemIndices, find, intercalate)
 import SugarCane.Farm qualified as Farm
 import SugarCane.Geometry (deindex, indexGrid, neighbours)
+import SugarCane.Internal.ANSI
+import Text.Printf
 
 -- | A single block in the farm.
 data LayoutBlock
@@ -48,18 +50,64 @@ instance Show Layout where
   show Layout {grid = grid} =
     let displayOne :: LayoutBlock -> String
         displayOne b = case b of
-          Irrigated -> "\x1b[92m██\x1b[0m"
-          Unirrigated -> "\x1b[93m▓▓\x1b[0m"
-          Water -> "\x1b[94m░░\x1b[0m"
+          Irrigated -> colourSpan greenFg "██"
+          Unirrigated -> colourSpan yellowFg "▓▓"
+          Water -> colourSpan blueFg "░░"
           Blocked -> "  "
-     in intercalate "\n" $ [concat ([displayOne block | block <- row]) | row <- grid]
+     in intercalate "\n" $ [concatMap displayOne row | row <- grid]
+
+-- | Creates a legend explaining the colours/symbols of the layout
+layoutLegend :: String
+layoutLegend =
+  "legend: "
+    ++ colourSpan greenFg "██"
+    ++ " sugar cane "
+    ++ colourSpan yellowFg "▓▓"
+    ++ " unused block "
+    ++ colourSpan blueFg "░░"
+    ++ " water "
+    ++ "\n"
 
 -- | Creates "report" for the user explaining the phase and score of this particular layout.
 layoutReport :: Layout -> String
-layoutReport lay =
-  let p = maybe "unknown" show (findPhase lay)
-      score = optimalityScore lay
-   in "Layout phase: " ++ show p ++ " score: " ++ show score ++ "\n" ++ show lay ++ "\n"
+layoutReport lay = unlines $ header ++ body
+  where
+    (w, h) = (width lay, height lay)
+    score = optimalityScore lay
+    phaseOffset = maybe "unknown" show (findPhase lay)
+    leftIndent = "    "
+
+    showNum2d :: Int -> String
+    showNum2d num = printf "%2d" (num `mod` 100)
+
+    -- Information header with phase and score
+    divider = leftIndent ++ (take (w * 2) $ repeat '=')
+    header =
+      [ divider,
+        leftIndent ++ "phase offset: " ++ phaseOffset,
+        leftIndent ++ "score:        " ++ show score,
+        divider,
+        ""
+      ]
+
+    -- Layout diagram with rulers on top and left.
+    body =
+      [leftIndent ++ topRuler ++ reset, ""]
+        ++ zipWith (\a b -> a ++ "  " ++ b) sideRulerLines (lines $ show lay)
+        ++ [""]
+
+    -- Ruler to show column number.
+    topRuler =
+      concatMap
+        (\(code, num) -> code ++ showNum2d num)
+        (zip (cycle [invertedFgBg, reset]) [1 .. w])
+
+    -- Ruler to show line number.
+    sideRulerLines =
+      zipWith
+        ($)
+        (cycle [id, colourSpan $ invertedFgBg])
+        (map showNum2d [1 .. h])
 
 -----------------------------------------------------------
 -- Layout Application

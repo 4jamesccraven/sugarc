@@ -69,8 +69,8 @@ instance Show ProgramResult where
   show result = case result of
     NothingYet -> "undefined"
     FarmState f -> show f
-    Layouts ls -> intercalate "\n\n" $ map layoutReport ls
-    FinalLayout l -> layoutReport l
+    Layouts ls -> intercalate "\n\n" $ (map layoutReport ls) ++ [layoutLegend]
+    FinalLayout l -> layoutReport l ++ "\n\n" ++ layoutLegend
 
 -- | How the output should be presented.
 --
