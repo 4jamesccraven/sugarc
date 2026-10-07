@@ -48,10 +48,10 @@ instance Show Layout where
   show Layout {grid = grid} =
     let displayOne :: LayoutBlock -> String
         displayOne b = case b of
-          Irrigated -> "\x1b[92m█\x1b[0m"
-          Unirrigated -> "\x1b[93m▓\x1b[0m"
-          Water -> "\x1b[94m░\x1b[0m"
-          Blocked -> " "
+          Irrigated -> "\x1b[92m██\x1b[0m"
+          Unirrigated -> "\x1b[93m▓▓\x1b[0m"
+          Water -> "\x1b[94m░░\x1b[0m"
+          Blocked -> "  "
      in intercalate "\n" $ [concat ([displayOne block | block <- row]) | row <- grid]
 
 -- | Creates "report" for the user explaining the phase and score of this particular layout.

@@ -43,7 +43,7 @@ instance Show Farm where
   show (Farm {width = _, height = _, blocks = grid}) =
     intercalate "\n" $ [concat ([displayOne s | s <- row]) | row <- grid]
     where
-      displayOne state = if state == Available then "█" else " "
+      displayOne state = if state == Available then "██" else "  "
 
 -- | Creates a farm of the provided shape.
 shapedFarm :: Shape -> Farm
