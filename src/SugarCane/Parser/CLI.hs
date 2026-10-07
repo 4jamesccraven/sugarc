@@ -26,7 +26,7 @@ import System.Environment (getArgs)
 
 -- | What the sugarc program should ultimately do.
 data CLIFinalBehaviour
-  = CLIPrintHelp
+  = CLIPrintHelp Bool
   | CLIPrintVersion
   | CLIRunProgram [ProgramInstruction]
   | CLIExitHelp
@@ -55,7 +55,7 @@ parseCLI :: Parser CLIFinalBehaviour
 parseCLI =
   foldl1
     (<|>)
-    [ CLIPrintHelp <$ parseSubcommand "help",
+    [ CLIPrintHelp <$> parseSubcommand "help",
       CLIPrintVersion <$ parseSubcommand "version",
       CLIRunProgram <$> parseProgram
     ]
@@ -65,17 +65,18 @@ parseCLI =
       where
         parseNextOpt = skipWhiteSpace *> peekChar (== '-') *> parseOpt
 
--- | Parses a top-level command for the program.
+-- | Parses a top-level command for the program. Parses `True` if parsed as a
+-- subcommand or a UNIX long flag. Parses `False` otherwise.
 --
 -- The most permissive flag parser, allows ffmpeg-like, UNIX long and short,
 -- and subcommand styles (e.g., @help@, @--help@, @-help@, and @-h@ are all
 -- accepted).
-parseSubcommand :: String -> Parser String
+parseSubcommand :: String -> Parser Bool
 parseSubcommand name =
   mapErr
-    ( parseToken name
-        <|> parseToken ("--" ++ name)
-        <|> parseFlag name
+    ( (True <$ parseToken name)
+        <|> (True <$ parseToken ("--" ++ name))
+        <|> (False <$ parseFlag name)
     )
     CLIExpectedSubcommand
 

@@ -74,7 +74,7 @@ sugarc from rectangle 10 15 \
     -block square 2 \
     -gravity bottom+right \
     -block square 2 \
-    -take all 2
+    -take all
 ```
 
 [^1]: This is a heavily modified excerpt of the help message. More details can

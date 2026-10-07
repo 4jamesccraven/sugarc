@@ -28,8 +28,9 @@ main :: IO ()
 main = do
   doWhat <- runCliParser
   case doWhat of
-    Right CLIPrintHelp -> putStrLn helpMessage
-    Right CLIExitHelp -> putStrLn helpMessage >> exitWith (ExitFailure 1)
+    Right (CLIPrintHelp long) ->
+      if long then putStrLn helpMessage else putStrLn shortHelpMessage
+    Right CLIExitHelp -> putStrLn shortHelpMessage >> exitWith (ExitFailure 1)
     Right CLIPrintVersion -> putStrLn $ "sugarc " ++ versionString
     Right (CLIRunProgram parsed) ->
       let instructions = ensureTake parsed
